@@ -81,3 +81,15 @@
   <div class="chart-container" style="position: relative; height:250px; margin-top:20px;">
   <canvas id="flowChart"></canvas>
 </div>
+<div class="athero-control-card">
+  <label class="switch">
+    <input type="checkbox" id="atheroToggle">
+    <span class="slider round"></span>
+  </label>
+  <span>จำลองภาวะหลอดเลือดตีบ (Atherosclerosis)</span>
+
+  <div id="plaqueControl" style="display: none; margin-top: 10px;">
+    <label for="plaqueSeverity">คราบไขมันสะสม (Plaque Obstruction): <span id="plaqueVal">0</span>%</label>
+    <input type="range" id="plaqueSeverity" min="0" max="80" step="5" value="30">
+  </div>
+</div>
