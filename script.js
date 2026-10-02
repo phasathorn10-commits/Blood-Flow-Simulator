@@ -396,3 +396,69 @@ function onInputChange() {
 
 // เรียกทำงานครั้งแรกเมื่อโหลดหน้าเว็บ
 onInputChange();
+
+const atheroToggle = document.getElementById('atheroToggle');
+const plaqueSeverityInput = document.getElementById('plaqueSeverity');
+const plaqueVal = document.getElementById('plaqueVal');
+
+// สลับการแสดงผลเมนูควบคุม Plaque
+atheroToggle.addEventListener('change', () => {
+  document.getElementById('plaqueControl').style.display = atheroToggle.checked ? 'block' : 'none';
+  updateSimulation();
+});
+
+plaqueSeverityInput.addEventListener('input', () => {
+  plaqueVal.textContent = plaqueSeverityInput.value;
+  updateSimulation();
+});
+
+// ฟังก์ชันคำนวณและวาดรูปบน Canvas
+function drawVesselWithPlaque(baseRadiusPx, flowRate) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const centerY = canvas.height / 2;
+  const isAthero = atheroToggle.checked;
+  const plaquePercent = isAthero ? parseFloat(plaqueSeverityInput.value) : 0;
+
+  // รัศมีจริงบริเวณที่มีคราบไขมันตีบแคบลง
+  const EffectiveRadiusPx = baseRadiusPx * (1 - plaquePercent / 100);
+
+  // 1. วาดผนังหลอดเลือดปกติ
+  ctx.fillStyle = '#475569';
+  ctx.fillRect(0, 0, canvas.width, centerY - baseRadiusPx);
+  ctx.fillRect(0, centerY + baseRadiusPx, canvas.width, canvas.height - (centerY + baseRadiusPx));
+
+  // 2. ถ้าเปิดโหมดตีบ ให้วาดก้อนคราบไขมัน (Plaque) เป็นส่วนโค้งนูนขึ้นมาจากผนังทั้งบนและล่างตรงกลางหลอดเลือด
+  if (isAthero && plaquePercent > 0) {
+    const plaqueWidth = 150; // ความยาวของก้อนไขมัน
+    const startX = (canvas.width - plaqueWidth) / 2;
+    const endX = startX + plaqueWidth;
+    const plaqueHeight = baseRadiusPx - EffectiveRadiusPx;
+
+    ctx.fillStyle = '#facc15'; // สีเหลืองจำลองคราบไขมัน/คอเลสเตอรอล
+
+    // คราบไขมันผนังบน
+    ctx.beginPath();
+    ctx.moveTo(startX, centerY - baseRadiusPx);
+    ctx.quadraticCurveTo(canvas.width / 2, centerY - EffectiveRadiusPx, endX, centerY - baseRadiusPx);
+    ctx.fill();
+
+    // คราบไขมันผนังล่าง
+    ctx.beginPath();
+    ctx.moveTo(startX, centerY + baseRadiusPx);
+    ctx.quadraticCurveTo(canvas.width / 2, centerY + EffectiveRadiusPx, endX, centerY + baseRadiusPx);
+    ctx.fill();
+  }
+
+  // 3. วาดและอัปเดตเม็ดเลือดแดง (ให้ชะลอความเร็วเมื่อวิ่งผ่านจุดตีบ)
+  particles.forEach(p => {
+    // เช็กว่าเม็ดเลือดวิ่งอยู่ตรงช่วงคราบไขมันหรือไม่
+    const inPlaqueZone = p.x > (canvas.width - 150) / 2 && p.x < (canvas.width + 150) / 2;
+    const currentRadius = (isAthero && inPlaqueZone) ? EffectiveRadiusPx : baseRadiusPx;
+    
+    // ความเร็วชะลอลงตามรัศมีที่ตีบแคบลง
+    const localSpeed = Math.max(flowRate * 0.05 * Math.pow(currentRadius / baseRadiusPx, 2), 0.2);
+    
+    p.update(currentRadius, localSpeed);
+    p.draw(ctx, centerY, currentRadius);
+  });
+}
