@@ -462,3 +462,28 @@ function drawVesselWithPlaque(baseRadiusPx, flowRate) {
     p.draw(ctx, centerY, currentRadius);
   });
 }
+function updateAtheroChart(rBase, dP, mu, L) {
+  const plaquePercent = atheroToggle.checked ? parseFloat(plaqueSeverityInput.value) : 0;
+  const rEffective = rBase * (1 - plaquePercent / 100);
+
+  // คำนวณ Q ปกติ vs Q เมื่อตีบ
+  const qNormal = (Math.PI * Math.pow(rBase, 4) * dP) / (8 * mu * L);
+  const qStenosis = (Math.PI * Math.pow(rEffective, 4) * dP) / (8 * mu * L);
+
+  // คำนวณ % การลดลงของ Flow Rate
+  const flowDropPercent = ((1 - qStenosis / qNormal) * 100).toFixed(1);
+
+  // อัปเดตข้อความเตือนบน UI
+  const alertBox = document.getElementById('atheroAlert');
+  if (atheroToggle.checked && plaquePercent > 0) {
+    alertBox.innerHTML = `⚠️ รัศมีลดลง <b>${plaquePercent}%</b> ส่งผลให้การไหล $Q$ ลดลงถึง <b style="color: #ef4444;">${flowDropPercent}%</b> !`;
+  } else {
+    alertBox.innerHTML = `หลอดเลือดอยู่ในภาวะปกติ`;
+  }
+
+  // อัปเดตกราฟ Chart.js (แสดงจุดเปรียบเทียบ Before / After)
+  flowChart.data.datasets[1].data = getChartPointArray(rBase, qNormal); // จุดปกติ
+  flowChart.data.datasets[2].data = atheroToggle.checked ? getChartPointArray(rEffective, qStenosis) : []; // จุดเมื่อตีบ
+
+  flowChart.update();
+}
