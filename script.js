@@ -160,3 +160,119 @@ window.addEventListener('DOMContentLoaded', () => {
   updateSimulation();
   animate();
 });
+// ==========================================
+// 1. ตัวแปรอ้างอิง และการสร้าง Chart.js
+// ==========================================
+const chartCtx = document.getElementById('flowChart').getContext('2d');
+
+// สร้างกราฟเริ่มต้น (Line Chart)
+const flowChart = new Chart(chartCtx, {
+  type: 'line',
+  data: {
+    labels: [], // ค่า r (0.5 ถึง 3.0)
+    datasets: [
+      {
+        label: 'Flow Rate (Q) vs Radius (r)',
+        data: [], // ค่า Q ที่คำนวณได้
+        borderColor: '#ef4444', // สีเส้นกราฟ (แดง)
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        fill: true,
+        tension: 0.4, // ความโค้งของเส้น
+        borderWidth: 2,
+        pointRadius: 0 // ซ่อนจุดบนเส้นเพื่อความลื่นไหล
+      },
+      {
+        label: 'Current State', // จุดแสดงตำแหน่งปัจจุบันที่ผู้ใช้เลือก
+        data: [],
+        borderColor: '#38bdf8', // สีจุด (ฟ้า)
+        backgroundColor: '#38bdf8',
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        showLine: false // แสดงเฉพาะจุด ไม่ลากเส้น
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: { color: '#f8fafc' } // สีข้อความกำกับ
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => ` Q: ${context.parsed.y.toFixed(2)} mL/s`
+        }
+      }
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Radius (r) [mm]',
+          color: '#f8fafc'
+        },
+        ticks: { color: '#94a3b8' },
+        grid: { color: '#334155' }
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Flow Rate (Q) [mL/s]',
+          color: '#f8fafc'
+        },
+        ticks: { color: '#94a3b8' },
+        grid: { color: '#334155' }
+      }
+    }
+  }
+});
+
+// ==========================================
+// 2. ฟังก์ชันสำหรับคำนวณและอัปเดตข้อมูลในกราฟ
+// ==========================================
+function updateChart(currentR, dP, mu, L) {
+  const rLabels = [];
+  const qData = [];
+
+  // จำลองคำนวณค่า Q เมื่อ r เปลี่ยนตั้งแต่ 0.5 ถึง 3.0 mm (แบ่งเป็น 25 จุด)
+  for (let r = 0.5; r <= 3.0; r += 0.1) {
+    const Q = (Math.PI * Math.pow(r, 4) * dP) / (8 * mu * L);
+    rLabels.push(r.toFixed(1));
+    qData.push(Q);
+  }
+
+  // คำนวณค่า Q ณ จุดปัจจุบันที่ผู้ใช้ปรับสไลเดอร์อยู่
+  const currentQ = (Math.PI * Math.pow(currentR, 4) * dP) / (8 * mu * L);
+
+  // สร้างอาร์เรย์สำหรับจุดปัจจุบัน (ให้ตรงกับตำแหน่ง X ของค่า currentR)
+  const currentPointData = rLabels.map(rStr => {
+    return parseFloat(rStr) === parseFloat(currentR.toFixed(1)) ? currentQ : null;
+  });
+
+  // อัปเดตข้อมูลเข้า Chart.js
+  flowChart.data.labels = rLabels;
+  flowChart.data.datasets[0].data = qData; // เส้นกราฟทฤษฎี $r^4$
+  flowChart.data.datasets[1].data = currentPointData; // จุดปัจจุบัน
+
+  // สั่งให้กราฟวาดใหม่โดยไม่ต้องทำ Animation ซ้ำซ้อน (เพื่อความลื่นไหล)
+  flowChart.update('none');
+}
+
+// ==========================================
+// 3. เรียกใช้งานฟังก์ชันภายใน updateSimulation
+// ==========================================
+// ให้เพิ่มคำสั่งนี้ไว้ในฟังก์ชัน updateSimulation() เดิมของคุณ:
+/* 
+function updateSimulation() {
+  const r = parseFloat(radiusInput.value);
+  const dP = parseFloat(pressureInput.value);
+  const mu = parseFloat(viscosityInput.value);
+  const L = parseFloat(lengthInput.value);
+
+  // ... โค้ดคำนวณเดิมของคุณ ...
+
+  // 🟢 อัปเดตกราฟ Chart.js
+  updateChart(r, dP, mu, L);
+}
+*/
