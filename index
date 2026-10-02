@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blood Flow Simulator</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- KaTeX สำหรับแสดงผลสมการคณิตศาสตร์ -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <h1>🩸 Blood Flow Simulator</h1>
+      <p>การจำลองการไหลของเลือดตามกฎ Hagen–Poiseuille Law</p>
+    </header>
+
+    <main class="main-content">
+      <!-- ส่วนควบคุมตัวแปร (Controls) -->
+      <section class="controls-card">
+        <h2>ปรับค่าตัวแปร (Parameters)</h2>
+        
+        <div class="control-group">
+          <label for="radius">รัศมีหลอดเลือด (Radius, $r$): <span id="r-val">1.5</span> mm</label>
+          <input type="range" id="radius" min="0.5" max="3.0" step="0.1" value="1.5">
+        </div>
+
+        <div class="control-group">
+          <label for="pressure">ความแตกต่างของแรงดัน ($\Delta P$): <span id="p-val">100</span> mmHg</label>
+          <input type="range" id="pressure" min="20" max="200" step="5" value="100">
+        </div>
+
+        <div class="control-group">
+          <label for="viscosity">ความหนืดของเลือด ($\mu$): <span id="mu-val">3.5</span> cP</label>
+          <input type="range" id="viscosity" min="1.0" max="10.0" step="0.1" value="3.5">
+        </div>
+
+        <div class="control-group">
+          <label for="length">ความยาวหลอดเลือด (Length, $L$): <span id="l-val">10</span> cm</label>
+          <input type="range" id="length" min="1" max="20" step="1" value="10">
+        </div>
+      </section>
+
+      <!-- ส่วนการแสดงผลจำลอง (Visualization & Results) -->
+      <section class="simulation-card">
+        <canvas id="simCanvas" width="600" height="250"></canvas>
+        
+        <div class="results">
+          <div class="formula-box" id="formula"></div>
+          <div class="metrics">
+            <div class="metric-item">
+              <span class="label">อัตราการไหล (Flow Rate, $Q$):</span>
+              <span class="value" id="q-val">0</span>
+            </div>
+            <div class="metric-item">
+              <span class="label">ความต้านทาน (Resistance, $R$):</span>
+              <span class="value" id="res-val">0</span>
+            </div>
+            <div class="metric-item">
+              <span class="label">Wall Shear Stress ($\tau$):</span>
+              <span class="value" id="shear-val">0</span>
+            </div>
+            <div class="metric-item">
+              <span class="label">Reynolds Number ($Re$):</span>
+              <span class="value" id="re-val">0</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
