@@ -276,3 +276,123 @@ function updateSimulation() {
   updateChart(r, dP, mu, L);
 }
 */
+// ==========================================
+// 1. ตั้งค่า Chart.js สำหรับ Dynamic Curve
+// ==========================================
+const chartCtx = document.getElementById('flowChart').getContext('2d');
+
+const flowChart = new Chart(chartCtx, {
+  type: 'line',
+  data: {
+    labels: [], // เก็บค่า r (รัศมีหลอดเลือด เช่น 0.5 ถึง 3.0 mm)
+    datasets: [
+      {
+        label: 'r⁴ Flow Curve (Q)',
+        data: [], // ค่า Q ที่คำนวณใหม่ตามสูตร r^4
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.15)',
+        fill: true,
+        tension: 0.4, // ทำให้เส้นโค้งมนสมูท
+        borderWidth: 2.5,
+        pointRadius: 0 // ซ่อนจุดบนเส้นเพื่อความสวยงาม
+      },
+      {
+        label: 'Current State',
+        data: [], // จุดเน้นตำแหน่งปัจจุบันที่ผู้ใช้เลื่อนสไลเดอร์อยู่
+        borderColor: '#38bdf8',
+        backgroundColor: '#38bdf8',
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        showLine: false
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false, // ปิด animation เพื่อให้การลากสไลเดอร์ตอบสนองทันทีแบบ Real-time
+    plugins: {
+      legend: { labels: { color: '#f8fafc' } },
+      tooltip: {
+        callbacks: {
+          label: (context) => ` Q: ${context.parsed.y.toFixed(2)} mL/s`
+        }
+      }
+    },
+    scales: {
+      x: {
+        title: { display: true, text: 'Radius (r) [mm]', color: '#f8fafc' },
+        ticks: { color: '#94a3b8' },
+        grid: { color: '#334155' }
+      },
+      y: {
+        title: { display: true, text: 'Flow Rate (Q) [mL/s]', color: '#f8fafc' },
+        ticks: { color: '#94a3b8' },
+        grid: { color: '#334155' }
+      }
+    }
+  }
+});
+
+// ==========================================
+// 2. ฟังก์ชันคำนวณและวาด Dynamic Curve ใหม่
+// ==========================================
+function updateDynamicCurve(currentR, dP, mu, L) {
+  const rLabels = [];
+  const qCurveData = [];
+  
+  const minRadius = 0.5; // ค่ารัศมีต่ำสุดบนแกน X
+  const maxRadius = 3.0; // ค่ารัศมีสูงสุดบนแกน X
+  const step = 0.1;      // ความละเอียดของจุดคำนวณ
+
+  // 🔄 วนลูปคำนวณรูปทรงเส้นโค้ง r^4 ใหม่ ณ ค่า dP, mu, L ปัจจุบัน
+  for (let r = minRadius; r <= maxRadius; r += step) {
+    const rFixed = r.toFixed(1);
+    
+    // คำนวณตามสูตร Hagen–Poiseuille: Q = (π * r^4 * ΔP) / (8 * μ * L)
+    const Q = (Math.PI * Math.pow(r, 4) * dP) / (8 * mu * L);
+    
+    rLabels.push(rFixed);
+    qCurveData.push(Q);
+  }
+
+  // คำนวณตำแหน่งจุดปัจจุบัน (Current State Indicator)
+  const currentQ = (Math.PI * Math.pow(currentR, 4) * dP) / (8 * mu * L);
+  const currentPointData = rLabels.map(rStr => {
+    return parseFloat(rStr) === parseFloat(currentR.toFixed(1)) ? currentQ : null;
+  });
+
+  // ⚡ อัปเดตข้อมูลชุดใหม่เข้า Chart.js
+  flowChart.data.labels = rLabels;
+  flowChart.data.datasets[0].data = qCurveData;     // วาดเส้นโค้งใหม่
+  flowChart.data.datasets[1].data = currentPointData; // ย้ายจุดปัจจุบัน
+
+  // สั่งให้กราฟวาดซ้ำทันที
+  flowChart.update();
+}
+
+// ==========================================
+// 3. ตัวอย่างการดึงค่าจาก Input Sliders มาสั่งทำงาน
+// ==========================================
+const radiusInput = document.getElementById('radius');
+const pressureInput = document.getElementById('pressure');
+const viscosityInput = document.getElementById('viscosity');
+const lengthInput = document.getElementById('length');
+
+function onInputChange() {
+  const r = parseFloat(radiusInput.value);   // mm
+  const dP = parseFloat(pressureInput.value); // mmHg
+  const mu = parseFloat(viscosityInput.value); // cP
+  const L = parseFloat(lengthInput.value);   // cm
+
+  // เรียกคำนวณสร้างเส้นโค้งใหม่ทันทีที่มีการขยับสไลเดอร์ตัวใดตัวหนึ่ง
+  updateDynamicCurve(r, dP, mu, L);
+}
+
+// ผูก Event Listener เข้ากับสไลเดอร์ทั้งหมด
+[radiusInput, pressureInput, viscosityInput, lengthInput].forEach(input => {
+  input.addEventListener('input', onInputChange);
+});
+
+// เรียกทำงานครั้งแรกเมื่อโหลดหน้าเว็บ
+onInputChange();
